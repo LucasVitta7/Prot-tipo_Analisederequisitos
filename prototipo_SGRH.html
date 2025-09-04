@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HotelSys – Protótipo</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind config for fonts and colors
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial"],
+          },
+          colors: {
+            brand: {
+              50: '#eef8ff',
+              100: '#d9eeff',
+              200: '#b9dfff',
+              300: '#88c9ff',
+              400: '#4eabff',
+              500: '#1d8dff',
+              600: '#0c71e6',
+              700: '#0759b4',
+              800: '#083f7d',
+              900: '#0a2c54'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 25px -10px rgba(0,0,0,0.2)'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Scrollbars sutis */
+    * { scrollbar-width: thin; scrollbar-color: #c7d2fe transparent; }
+    *::-webkit-scrollbar { height: 8px; width: 8px; }
+    *::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 999px; }
+    .fade-enter { opacity: 0; transform: translateY(6px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); transition: all .2s ease; }
+    .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+  <!-- LOGIN -->
+  <main id="loginView" class="min-h-screen grid place-items-center p-6">
+    <section class="w-full max-w-md bg-white/90 backdrop-blur rounded-2xl shadow-soft p-8 border border-slate-100">
+      <header class="mb-6 text-center">
+        <div class="mx-auto mb-3 h-12 w-12 grid place-items-center rounded-2xl bg-brand-100 text-brand-700 font-bold">HS</div>
+        <h1 class="text-2xl font-bold">HotelSys</h1>
+        <p class="text-sm text-slate-500">Acesso restrito ao pessoal autorizado</p>
+      </header>
+      <form id="loginForm" class="space-y-4" autocomplete="off">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="user">Usuário</label>
+          <input id="user" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-brand-300" placeholder="ex.: joao.silva" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="pass">Senha</label>
+          <input id="pass" type="password" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-brand-300" placeholder="********" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="role">Perfil</label>
+          <select id="role" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-brand-300">
+            <option value="recepcionista">Recepcionista</option>
+            <option value="gerente">Gerente</option>
+          </select>
+        </div>
+        <button class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl py-2.5 transition">Entrar</button>
+      </form>
+      <p class="mt-4 text-xs text-slate-500 text-center">Protótipo sem backend: qualquer combinação funciona para testar.</p>
+    </section>
+  </main>
+
+  <!-- APP SHELL -->
+  <div id="appShell" class="hidden min-h-screen">
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 w-72 bg-white/90 backdrop-blur border-r border-slate-100 p-4 hidden md:flex md:flex-col">
+      <div class="flex items-center gap-3 px-2 py-3">
+        <div class="h-10 w-10 grid place-items-center rounded-xl bg-brand-100 text-brand-700 font-bold">HS</div>
+        <div>
+          <div class="text-sm text-slate-500">HotelSys</div>
+          <div class="font-semibold">Painel</div>
+        </div>
+      </div>
+      <nav class="mt-4 space-y-1" id="sidebarNav">
+        <button data-route="dashboard" class="navbtn">
+          <span>Dashboard</span>
+        </button>
+        <button data-route="reservas" class="navbtn">
+          <span>Reservas</span>
+        </button>
+        <button data-route="hospedes" class="navbtn">
+          <span>Hóspedes</span>
+        </button>
+        <button data-route="quartos" class="navbtn">
+          <span>Quartos</span>
+        </button>
+        <button data-route="funcionarios" class="navbtn">
+          <span>Funcionários</span>
+        </button>
+        <button data-route="tipos" class="navbtn">
+          <span>Tipos de Quarto</span>
+        </button>
+      </nav>
+      <div class="mt-auto pt-4 border-t border-slate-100">
+        <div class="text-xs text-slate-500" id="userBadge">—</div>
+        <button id="logoutBtn" class="mt-2 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg py-2">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Topbar (mobile) -->
+    <header class="md:hidden sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-100">
+      <div class="flex items-center justify-between px-4 py-3">
+        <button id="openDrawer" class="rounded-lg border px-3 py-1.5">Menu</button>
+        <div class="font-semibold">HotelSys</div>
+        <button id="logoutBtnMobile" class="rounded-lg border px-3 py-1.5">Sair</button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="md:pl-72 p-4 md:p-8 space-y-6" id="viewRoot">
+      <!-- ROUTES render here -->
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modalRoot" class="hidden fixed inset-0 z-50"></div>
+
+  <template id="navbtnTpl">
+    <style>
+      .navbtn { width:100%; text-align:left; padding:.75rem 1rem; border-radius:.75rem; font-weight:500; color:#334155;}
+      .navbtn:hover { background:#f1f5f9;}
+      .navbtn.active { background:#e2e8f0;}
+    </style>
+  </template>
+
+  <script>
+    /**********************
+     * MOCK DATA & HELPERS *
+     **********************/
+    const store = {
+      user: null,
+      roles: { recepcionista: 'Recepcionista', gerente: 'Gerente' },
+      tipos: [
+        { id: 'STD', nome: 'Solteiro', capacidade: 1 },
+        { id: 'DBL', nome: 'Casal', capacidade: 2 },
+        { id: 'STE', nome: 'Suíte', capacidade: 4 },
+      ],
+      quartos: [
+        { id: '101', tipo: 'STD' }, { id: '102', tipo: 'STD' },
+        { id: '201', tipo: 'DBL' }, { id: '202', tipo: 'DBL' },
+        { id: '301', tipo: 'STE' }
+      ],
+      hospedes: [
+        { id: 'H001', nome: 'Ana Souza', cpf: '123.456.789-00', tel: '(11) 99999-1111', email: 'ana@email.com' },
+        { id: 'H002', nome: 'Bruno Lima', cpf: '987.654.321-00', tel: '(11) 98888-2222', email: 'bruno@email.com' },
+      ],
+      reservas: [
+        { id: 'R1001', hospedeId: 'H001', quarto: '201', tipo: 'DBL', checkin: '2025-09-10', checkout: '2025-09-12', status: 'Confirmada', obs: '' },
+        { id: 'R1002', hospedeId: 'H002', quarto: '101', tipo: 'STD', checkin: '2025-09-12', checkout: '2025-09-14', status: 'Em Andamento', obs: 'Chegada tarde' },
+      ],
+    };
+
+    const fmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' });
+    const byId = (id) => document.getElementById(id);
+    const qs = (sel, el=document) => el.querySelector(sel);
+    const qsa = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+
+    function uid(prefix) {
+      return prefix + Math.random().toString(36).slice(2, 8);
+    }
+
+    function between(date, start, end) {
+      const d = new Date(date), s = new Date(start), e = new Date(end);
+      return d >= s && d < e; // checkout livre
+    }
+
+    function overlaps(aStart, aEnd, bStart, bEnd) {
+      const aS = new Date(aStart), aE = new Date(aEnd), bS = new Date(bStart), bE = new Date(bEnd);
+      return aS < bE && bS < aE; // interseção aberta
+    }
+
+    function getHospede(id) { return store.hospedes.find(h => h.id === id); }
+
+    /****************
+     * ROUTER (SPA) *
+     ***************/
+    const routes = {
+      dashboard: renderDashboard,
+      reservas: renderReservas,
+      reservaForm: renderReservaForm,
+      hospedes: renderHospedes,
+      quartos: renderQuartos,
+      funcionarios: renderFuncionarios,
+      tipos: renderTipos
+    };
+
+    function navigate(route, params={}) {
+      window.location.hash = route + (Object.keys(params).length ? ':' + encodeURIComponent(JSON.stringify(params)) : '');
+    }
+
+    window.addEventListener('hashchange', handleRoute);
+
+    function handleRoute() {
+      const hash = window.location.hash.replace('#','') || 'dashboard';
+      const [route, raw] = hash.split(':');
+      const params = raw ? JSON.parse(decodeURIComponent(raw)) : {};
+      qsa('.navbtn').forEach(btn => btn.classList.toggle('active', btn.dataset.route === route));
+      const outlet = byId('viewRoot');
+      outlet.innerHTML = '';
+      const el = routes[route] ? routes[route](params) : document.createElement('div');
+      el.classList.add('fade-enter');
+      outlet.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('fade-enter-active'));
+    }
+
+    /*****************
+     * AUTH MOCKFLOW *
+     *****************/
+    byId('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const user = byId('user').value.trim();
+      const role = byId('role').value;
+      store.user = { user, role };
+      sessionStorage.setItem('hotelsys_user', JSON.stringify(store.user));
+      bootApp();
+    });
+
+    byId('logoutBtn').addEventListener('click', () => logout());
+    byId('logoutBtnMobile').addEventListener('click', () => logout());
+
+    function logout(){
+      sessionStorage.removeItem('hotelsys_user');
+      store.user = null;
+      byId('appShell').classList.add('hidden');
+      byId('loginView').classList.remove('hidden');
+    }
+
+    function bootApp(){
+      byId('loginView').classList.add('hidden');
+      byId('appShell').classList.remove('hidden');
+      byId('userBadge').textContent = `${store.user.user} — ${store.roles[store.user.role]}`;
+      // build sidebar interactions
+      qsa('#sidebarNav .navbtn').forEach(btn => btn.remove());
+      const items = ['dashboard','reservas','hospedes','quartos','funcionarios','tipos'];
+      const nav = byId('sidebarNav');
+      items.forEach(key => {
+        const b = document.createElement('button');
+        b.className = 'navbtn';
+        b.dataset.route = key;
+        b.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-brand-300"></span>${label(key)}</span>`;
+        b.addEventListener('click', () => navigate(key));
+        nav.appendChild(b);
+      });
+      handleRoute();
+    }
+
+    function label(k){
+      return ({dashboard:'Dashboard', reservas:'Reservas', hospedes:'Hóspedes', quartos:'Quartos', funcionarios:'Funcionários', tipos:'Tipos de Quarto'})[k] || k;
+    }
+
+    /**********************
+     * UI UTILS / COMPONENTS
+     **********************/
+    function card(title, value, sub){
+      const div = document.createElement('div');
+      div.className = 'bg-white border border-slate-100 rounded-2xl p-5 shadow-soft';
+      div.innerHTML = `
+        <div class="text-slate-500 text-sm">${title}</div>
+        <div class="text-2xl font-bold">${value}</div>
+        ${sub ? `<div class="text-xs text-slate-500 mt-1">${sub}</div>` : ''}
+      `;
+      return div;
+    }
+
+    function pill(status){
+      const map = {
+        'Confirmada': 'bg-green-50 text-green-700 ring-1 ring-green-200',
+        'Em Andamento': 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+        'Finalizada': 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+      };
+      return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${map[status] || 'bg-slate-100'}">${status}</span>`
+    }
+
+    function toolbar(title, actionsHTML=''){
+      const h = document.createElement('div');
+      h.className = 'flex items-center justify-between flex-wrap gap-3';
+      h.innerHTML = `
+        <h2 class="text-xl font-semibold">${title}</h2>
+        <div class="flex items-center gap-2">${actionsHTML}</div>
+      `;
+      return h;
+    }
+
+    function emptyState(title, desc, ctaHtml=''){
+      const el = document.createElement('div');
+      el.className = 'text-center border-2 border-dashed rounded-2xl p-10 text-slate-500';
+      el.innerHTML = `<div class="text-lg font-semibold mb-1">${title}</div><p class="mb-4">${desc}</p>${ctaHtml}`;
+      return el;
+    }
+
+    function modal(contentHTML){
+      const root = byId('modalRoot');
+      root.classList.remove('hidden');
+      root.innerHTML = `
+        <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+        <div class="min-h-screen grid place-items-center p-4">
+          <div class="w-full max-w-2xl bg-white rounded-2xl shadow-soft border border-slate-100 p-6">${contentHTML}</div>
+        </div>`;
+      root.addEventListener('click', (e)=>{ if(e.target === root.firstElementChild) closeModal(); });
+    }
+    function closeModal(){ const root = byId('modalRoot'); root.classList.add('hidden'); root.innerHTML = ''; }
+
+    function confirmDialog(title, msg, onConfirm){
+      modal(`
+        <h3 class="text-lg font-semibold">${title}</h3>
+        <p class="text-slate-600 mt-1 mb-5">${msg}</p>
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-2 rounded-lg border" onclick="closeModal()">Cancelar</button>
+          <button class="px-4 py-2 rounded-lg bg-red-600 text-white" onclick="(${onConfirm})(); closeModal();">Excluir</button>
+        </div>
+      `);
+    }
+
+    /****************
+     * ROUTE VIEWS  *
+     ****************/
+    function renderDashboard(){
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">Dashboard</h1>
+            <p class="text-sm text-slate-500">Visão geral do hotel</p>
+          </div>
+          <button class="bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-4 py-2" id="novaReservaTop">+ Nova Reserva</button>
+        </div>
+      `;
+
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 mt-4';
+      const hoje = new Date();
+      const checkinsHoje = store.reservas.filter(r => new Date(r.checkin).toDateString() === hoje.toDateString()).length;
+      const checkoutsHoje = store.reservas.filter(r => new Date(r.checkout).toDateString() === hoje.toDateString()).length;
+      const ocupadasHoje = store.reservas.filter(r => between(hoje, r.checkin, r.checkout)).length;
+      const disponiveisHoje = store.quartos.length - ocupadasHoje;
+      grid.append(
+        card('Check-ins de Hoje', checkinsHoje || 0),
+        card('Check-outs de Hoje', checkoutsHoje || 0),
+        card('Quartos Disponíveis', Math.max(disponiveisHoje,0), `${store.quartos.length} no total`)
+      );
+
+      // Calendário simples
+      const cal = document.createElement('section');
+      cal.className = 'bg-white border border-slate-100 rounded-2xl p-5 shadow-soft';
+      const year = hoje.getFullYear();
+      const month = hoje.getMonth();
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month + 1, 0);
+      const startWeekday = (first.getDay()+6)%7; // Monday-based
+      const days = last.getDate();
+      const cells = [];
+      for(let i=0;i<startWeekday;i++) cells.push('');
+      for(let d=1; d<=days; d++) cells.push(d);
+      cal.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Ocupação – ${first.toLocaleString('pt-BR', { month: 'long' })} ${year}</h3>
+          <div class="text-xs text-slate-500">Legenda: <span class="inline-block h-2 w-2 rounded bg-emerald-400 align-middle"></span> &lt; 50% | <span class="inline-block h-2 w-2 rounded bg-amber-400 align-middle"></span> 50–80% | <span class="inline-block h-2 w-2 rounded bg-rose-500 align-middle"></span> &gt; 80%</div>
+        </div>
+        <div class="grid grid-cols-7 gap-2 text-center text-xs text-slate-500">
+          <div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <div class="grid grid-cols-7 gap-2 mt-2" id="calGrid"></div>
+      `;
+      const calGrid = cal.querySelector('#calGrid');
+      cells.forEach((val, idx) => {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'aspect-square rounded-xl border border-slate-100 bg-slate-50/50 p-1 text-xs flex flex-col';
+        if(val){
+          const date = new Date(year, month, val);
+          const occ = store.reservas.filter(r => between(date, r.checkin, r.checkout)).length / store.quartos.length;
+          let dot = 'bg-emerald-400';
+          if(occ >= 0.8) dot = 'bg-rose-500';
+          else if(occ >= 0.5) dot = 'bg-amber-400';
+          dayCell.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-medium">${val}</span>
+              <span class="h-2 w-2 rounded ${dot}"></span>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-auto">${Math.round(occ*100)}% ocup.</div>
+          `;
+        }
+        calGrid.appendChild(dayCell);
+      });
+
+      wrap.append(grid, cal);
+      wrap.querySelector('#novaReservaTop').addEventListener('click', () => navigate('reservaForm'));
+      return wrap;
+    }
+
+    function renderReservas(){
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar('Reservas', `
+        <input id="resSearch" placeholder="Buscar por nome ou ID" class="rounded-xl border px-3 py-2 mr-2" />
+        <button class="bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-4 py-2" onclick="navigate('reservaForm')">+ Nova Reserva</button>
+      `));
+
+      const list = document.createElement('div');
+      list.className = 'mt-4 overflow-x-auto bg-white border border-slate-100 rounded-2xl shadow-soft';
+      list.innerHTML = `
+        <table class="w-full text-sm">
+          <thead class="text-left text-slate-600 border-b">
+            <tr>
+              <th class="p-3">ID</th>
+              <th class="p-3">Hóspede</th>
+              <th class="p-3">Check-in</th>
+              <th class="p-3">Check-out</th>
+              <th class="p-3">Quarto</th>
+              <th class="p-3">Status</th>
+              <th class="p-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="resRows"></tbody>
+        </table>
+      `;
+
+      function drawRows(filter=''){
+        const tbody = list.querySelector('#resRows');
+        tbody.innerHTML = '';
+        const needle = filter.toLowerCase();
+        store.reservas.filter(r => {
+          const hosp = getHospede(r.hospedeId)?.nome || '';
+          return !needle || r.id.toLowerCase().includes(needle) || hosp.toLowerCase().includes(needle);
+        }).forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b last:border-0';
+          const hosp = getHospede(r.hospedeId);
+          tr.innerHTML = `
+            <td class="p-3 font-medium">${r.id}</td>
+            <td class="p-3">${hosp?.nome || '-'}</td>
+            <td class="p-3">${fmt.format(new Date(r.checkin))}</td>
+            <td class="p-3">${fmt.format(new Date(r.checkout))}</td>
+            <td class="p-3">${r.quarto}</td>
+            <td class="p-3">${pill(r.status)}</td>
+            <td class="p-3">
+              <div class="flex justify-end gap-2">
+                <button class="px-2 py-1 rounded border" onclick='navigate("reservaForm", {id:"${r.id}"})'>Editar</button>
+                <button class="px-2 py-1 rounded border" onclick='viewReserva("${r.id}")'>Ver</button>
+                <button class="px-2 py-1 rounded bg-red-50 text-red-600" onclick='deleteReserva("${r.id}")'>Excluir</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        if(!tbody.children.length){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="7" class="p-8">${emptyState('Nenhuma reserva','Tente ajustar a busca.').outerHTML}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+
+      wrap.appendChild(list);
+      drawRows();
+      wrap.querySelector('#resSearch').addEventListener('input', (e)=> drawRows(e.target.value));
+      return wrap;
+    }
+
+    function viewReserva(id){
+      const r = store.reservas.find(x => x.id === id);
+      const hosp = getHospede(r.hospedeId);
+      modal(`
+        <h3 class="text-lg font-semibold">Reserva ${r.id}</h3>
+        <div class="grid grid-cols-2 gap-3 text-sm mt-3">
+          <div><div class="text-slate-500">Hóspede</div><div class="font-medium">${hosp?.nome}</div></div>
+          <div><div class="text-slate-500">CPF</div><div class="font-medium">${hosp?.cpf}</div></div>
+          <div><div class="text-slate-500">Check-in</div><div class="font-medium">${fmt.format(new Date(r.checkin))}</div></div>
+          <div><div class="text-slate-500">Check-out</div><div class="font-medium">${fmt.format(new Date(r.checkout))}</div></div>
+          <div><div class="text-slate-500">Tipo</div><div class="font-medium">${store.tipos.find(t=>t.id===r.tipo)?.nome}</div></div>
+          <div><div class="text-slate-500">Quarto</div><div class="font-medium">${r.quarto}</div></div>
+          <div><div class="text-slate-500">Status</div><div class="font-medium">${r.status}</div></div>
+          <div class="col-span-2"><div class="text-slate-500">Obs.</div><div class="font-medium">${r.obs || '—'}</div></div>
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+          <button class="px-3 py-2 rounded-lg border" onclick="closeModal()">Fechar</button>
+          <button class="px-3 py-2 rounded-lg bg-brand-600 text-white" onclick='navigate("reservaForm", {id:"${r.id}"}); closeModal();'>Editar</button>
+        </div>
+      `);
+    }
+
+    function deleteReserva(id){
+      confirmDialog('Excluir reserva', `Tem certeza que deseja excluir a reserva ${id}?`, () => {
+        const i = store.reservas.findIndex(r => r.id === id);
+        if(i>=0){ store.reservas.splice(i,1); handleRoute(); }
+      });
+    }
+
+    function availableRooms(tipoId, start, end){
+      const rooms = store.quartos.filter(q => !tipoId || q.tipo === tipoId);
+      const taken = new Set();
+      if(start && end){
+        store.reservas.forEach(r => {
+          if(overlaps(start, end, r.checkin, r.checkout)) taken.add(r.quarto);
+        });
+      }
+      return rooms.filter(r => !taken.has(r.id));
+    }
+
+    function renderReservaForm(params={}){
+      const editing = params.id && store.reservas.find(r => r.id === params.id);
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar(editing ? `Editar Reserva ${editing.id}` : 'Nova Reserva'));
+      const r = editing || { id: uid('R'), hospedeId: '', tipo: '', quarto: '', checkin: '', checkout: '', status: 'Confirmada', obs: '' };
+
+      const form = document.createElement('form');
+      form.className = 'mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border border-slate-100 rounded-2xl p-5 shadow-soft';
+      form.innerHTML = `
+        <div>
+          <label class="block text-sm font-medium mb-1">Hóspede</label>
+          <div class="flex gap-2">
+            <select id="fHosp" class="flex-1 rounded-xl border px-3 py-2">
+              <option value="">Selecione…</option>
+              ${store.hospedes.map(h => `<option value="${h.id}" ${h.id===r.hospedeId?'selected':''}>${h.nome}</option>`).join('')}
+            </select>
+            <button type="button" id="novoHospBtn" class="rounded-xl border px-3">+ Novo</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Status</label>
+          <select id="fStatus" class="w-full rounded-xl border px-3 py-2">
+            ${['Confirmada','Em Andamento','Finalizada'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Check-in</label>
+          <input type="date" id="fIn" class="w-full rounded-xl border px-3 py-2" value="${r.checkin}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Check-out</label>
+          <input type="date" id="fOut" class="w-full rounded-xl border px-3 py-2" value="${r.checkout}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Tipo de Quarto</label>
+          <select id="fTipo" class="w-full rounded-xl border px-3 py-2">
+            <option value="">Selecione…</option>
+            ${store.tipos.map(t=>`<option value="${t.id}" ${t.id===r.tipo?'selected':''}>${t.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Quarto</label>
+          <select id="fQuarto" class="w-full rounded-xl border px-3 py-2"></select>
+          <div class="text-xs text-slate-500 mt-1" id="roomsHint">—</div>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Observações</label>
+          <textarea id="fObs" rows="3" class="w-full rounded-xl border px-3 py-2" placeholder="Preferências, horários, etc.">${r.obs || ''}</textarea>
+        </div>
+        <div class="md:col-span-2 flex justify-end gap-2">
+          <button type="button" class="px-3 py-2 rounded-lg border" onclick="navigate('reservas')">Cancelar</button>
+          <button class="px-4 py-2 rounded-lg bg-brand-600 text-white">Salvar Reserva</button>
+        </div>
+      `;
+
+      function refreshRooms(){
+        const tipo = qs('#fTipo', form).value;
+        const i = qs('#fIn', form).value;
+        const o = qs('#fOut', form).value;
+        const rooms = availableRooms(tipo, i, o);
+        const sel = qs('#fQuarto', form);
+        sel.innerHTML = '<option value="">Selecione…</option>' + rooms.map(q=>`<option ${q.id===r.quarto?'selected':''} value="${q.id}">${q.id}</option>`).join('');
+        qs('#roomsHint', form).textContent = rooms.length ? `${rooms.length} quarto(s) disponível(is)` : 'Nenhum quarto disponível para os filtros.';
+      }
+
+      form.addEventListener('input', (e) => {
+        if(['fTipo','fIn','fOut'].includes(e.target.id)) refreshRooms();
+      }, true);
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = {
+          id: r.id,
+          hospedeId: qs('#fHosp', form).value,
+          status: qs('#fStatus', form).value,
+          checkin: qs('#fIn', form).value,
+          checkout: qs('#fOut', form).value,
+          tipo: qs('#fTipo', form).value,
+          quarto: qs('#fQuarto', form).value,
+          obs: qs('#fObs', form).value
+        };
+        if(!data.hospedeId || !data.checkin || !data.checkout || !data.tipo || !data.quarto){
+          alert('Preencha todos os campos obrigatórios.');
+          return;
+        }
+        if(new Date(data.checkout) <= new Date(data.checkin)){
+          alert('Check-out deve ser posterior ao check-in.');
+          return;
+        }
+        const idx = store.reservas.findIndex(x => x.id === r.id);
+        if(idx>=0) store.reservas[idx] = data; else store.reservas.push(data);
+        navigate('reservas');
+      });
+
+      // Novo hóspede inline
+      form.querySelector('#novoHospBtn').addEventListener('click', () => {
+        modal(`
+          <h3 class="text-lg font-semibold">Novo Hóspede</h3>
+          <form id="novoHospForm" class="grid grid-cols-2 gap-3 mt-3">
+            <div class="col-span-2"><label class="block text-sm mb-1">Nome</label><input id="nhNome" class="w-full rounded-xl border px-3 py-2" required></div>
+            <div><label class="block text-sm mb-1">CPF</label><input id="nhCpf" class="w-full rounded-xl border px-3 py-2" required></div>
+            <div><label class="block text-sm mb-1">Telefone</label><input id="nhTel" class="w-full rounded-xl border px-3 py-2"></div>
+            <div class="col-span-2"><label class="block text-sm mb-1">E-mail</label><input id="nhMail" type="email" class="w-full rounded-xl border px-3 py-2"></div>
+            <div class="col-span-2 flex justify-end gap-2 mt-2">
+              <button type="button" class="px-3 py-2 rounded-lg border" onclick="closeModal()">Cancelar</button>
+              <button class="px-4 py-2 rounded-lg bg-brand-600 text-white">Salvar</button>
+            </div>
+          </form>
+        `);
+        byId('novoHospForm').addEventListener('submit', (ev)=>{
+          ev.preventDefault();
+          const h = { id: uid('H'), nome: byId('nhNome').value.trim(), cpf: byId('nhCpf').value.trim(), tel: byId('nhTel').value.trim(), email: byId('nhMail').value.trim() };
+          store.hospedes.push(h);
+          closeModal();
+          qs('#fHosp', form).insertAdjacentHTML('beforeend', `<option value="${h.id}">${h.nome}</option>`);
+          qs('#fHosp', form).value = h.id;
+        });
+      });
+
+      wrap.appendChild(form);
+      setTimeout(refreshRooms, 0);
+      return wrap;
+    }
+
+    function renderHospedes(){
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar('Hóspedes', `<button class=\"bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-4 py-2\" id=\"novoHBtn\">+ Novo Hóspede</button>`));
+
+      const list = document.createElement('div');
+      list.className = 'mt-4 overflow-x-auto bg-white border border-slate-100 rounded-2xl shadow-soft';
+      list.innerHTML = `
+        <table class="w-full text-sm">
+          <thead class="text-left text-slate-600 border-b">
+            <tr>
+              <th class="p-3">Nome</th>
+              <th class="p-3">CPF</th>
+              <th class="p-3">Telefone</th>
+              <th class="p-3">E-mail</th>
+              <th class="p-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="hRows"></tbody>
+        </table>
+      `;
+
+      function draw(){
+        const tbody = list.querySelector('#hRows');
+        tbody.innerHTML = '';
+        store.hospedes.forEach(h => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b last:border-0';
+          tr.innerHTML = `
+            <td class="p-3 font-medium">${h.nome}</td>
+            <td class="p-3">${h.cpf}</td>
+            <td class="p-3">${h.tel || '—'}</td>
+            <td class="p-3">${h.email || '—'}</td>
+            <td class="p-3">
+              <div class="flex justify-end gap-2">
+                <button class="px-2 py-1 rounded border" onclick='editHospede("${h.id}")'>Editar</button>
+                <button class="px-2 py-1 rounded bg-red-50 text-red-600" onclick='deleteHospede("${h.id}")'>Excluir</button>
+              </div>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+        if(!tbody.children.length){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="5" class="p-8">${emptyState('Nenhum hóspede','Cadastre um novo para começar.').outerHTML}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+
+      wrap.appendChild(list);
+      draw();
+
+      wrap.querySelector('#novoHBtn').addEventListener('click', () => editHospede());
+      return wrap;
+    }
+
+    function editHospede(id){
+      const editing = id && store.hospedes.find(h => h.id === id);
+      modal(`
+        <h3 class="text-lg font-semibold">${editing? 'Editar' : 'Novo'} Hóspede</h3>
+        <form id="hForm" class="grid grid-cols-2 gap-3 mt-3">
+          <input type="hidden" id="hid" value="${editing?.id || ''}" />
+          <div class="col-span-2"><label class="block text-sm mb-1">Nome</label><input id="hnome" class="w-full rounded-xl border px-3 py-2" value="${editing?.nome || ''}" required></div>
+          <div><label class="block text-sm mb-1">CPF</label><input id="hcpf" class="w-full rounded-xl border px-3 py-2" value="${editing?.cpf || ''}" required></div>
+          <div><label class="block text-sm mb-1">Telefone</label><input id="htel" class="w-full rounded-xl border px-3 py-2" value="${editing?.tel || ''}"></div>
+          <div class="col-span-2"><label class="block text-sm mb-1">E-mail</label><input id="hmail" type="email" class="w-full rounded-xl border px-3 py-2" value="${editing?.email || ''}"></div>
+          <div class="col-span-2 flex justify-end gap-2 mt-2">
+            <button type="button" class="px-3 py-2 rounded-lg border" onclick="closeModal()">Cancelar</button>
+            <button class="px-4 py-2 rounded-lg bg-brand-600 text-white">Salvar</button>
+          </div>
+        </form>
+      `);
+      byId('hForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const data = {
+          id: byId('hid').value || uid('H'),
+          nome: byId('hnome').value.trim(),
+          cpf: byId('hcpf').value.trim(),
+          tel: byId('htel').value.trim(),
+          email: byId('hmail').value.trim(),
+        };
+        const idx = store.hospedes.findIndex(x => x.id === data.id);
+        if(idx>=0) store.hospedes[idx] = data; else store.hospedes.push(data);
+        closeModal();
+        handleRoute();
+      });
+    }
+
+    function deleteHospede(id){
+      confirmDialog('Excluir hóspede', 'A ação não pode ser desfeita.', () => {
+        const i = store.hospedes.findIndex(h => h.id === id);
+        if(i>=0) store.hospedes.splice(i,1);
+        // Remover reservas do hóspede?
+        store.reservas = store.reservas.filter(r => r.hospedeId !== id);
+        handleRoute();
+      });
+    }
+
+    function renderQuartos(){
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar('Quartos'));
+      const box = document.createElement('div');
+      box.className = 'mt-4 grid grid-cols-1 md:grid-cols-3 gap-3';
+      store.quartos.forEach(q => {
+        const tipo = store.tipos.find(t => t.id === q.tipo);
+        const ocup = store.reservas.some(r => r.quarto === q.id && between(new Date(), r.checkin, r.checkout));
+        const cardEl = card(`Quarto ${q.id}`, tipo?.nome || q.tipo, ocup? 'Ocupado' : 'Disponível');
+        cardEl.classList.add('relative');
+        const dot = document.createElement('div');
+        dot.className = `absolute top-4 right-4 h-2.5 w-2.5 rounded-full ${ocup? 'bg-rose-500' : 'bg-emerald-400'}`;
+        cardEl.appendChild(dot);
+        box.appendChild(cardEl);
+      });
+      wrap.appendChild(box);
+      return wrap;
+    }
+
+    function renderFuncionarios(){
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar('Funcionários'));
+      wrap.appendChild(emptyState('Módulo ilustrativo', 'No protótipo, este módulo é apenas uma vitrine.')); 
+      return wrap;
+    }
+
+    function renderTipos(){
+      const wrap = document.createElement('div');
+      wrap.appendChild(toolbar('Tipos de Quarto', `<button class=\"bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-4 py-2\" id=\"novoTipoBtn\">+ Novo Tipo</button>`));
+
+      const list = document.createElement('div');
+      list.className = 'mt-4 overflow-x-auto bg-white border border-slate-100 rounded-2xl shadow-soft';
+      list.innerHTML = `
+        <table class="w-full text-sm">
+          <thead class="text-left text-slate-600 border-b">
+            <tr>
+              <th class="p-3">ID</th>
+              <th class="p-3">Nome</th>
+              <th class="p-3">Capacidade</th>
+              <th class="p-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tRows"></tbody>
+        </table>
+      `;
+
+      function draw(){
+        const tbody = list.querySelector('#tRows');
+        tbody.innerHTML = '';
+        store.tipos.forEach(t => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b last:border-0';
+          tr.innerHTML = `
+            <td class="p-3 font-medium">${t.id}</td>
+            <td class="p-3">${t.nome}</td>
+            <td class="p-3">${t.capacidade}</td>
+            <td class="p-3">
+              <div class="flex justify-end gap-2">
+                <button class="px-2 py-1 rounded border" onclick='editTipo("${t.id}")'>Editar</button>
+                <button class="px-2 py-1 rounded bg-red-50 text-red-600" onclick='deleteTipo("${t.id}")'>Excluir</button>
+              </div>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      wrap.appendChild(list);
+      draw();
+      wrap.querySelector('#novoTipoBtn').addEventListener('click', () => editTipo());
+      return wrap;
+    }
+
+    function editTipo(id){
+      const editing = id && store.tipos.find(t => t.id === id);
+      modal(`
+        <h3 class="text-lg font-semibold">${editing? 'Editar' : 'Novo'} Tipo de Quarto</h3>
+        <form id="tipoForm" class="grid grid-cols-2 gap-3 mt-3">
+          <div><label class="block text-sm mb-1">ID</label><input id="tid" class="w-full rounded-xl border px-3 py-2" ${editing? 'readonly' : ''} value="${editing?.id || ''}" required></div>
+          <div><label class="block text-sm mb-1">Capacidade</label><input id="tcap" type="number" min="1" class="w-full rounded-xl border px-3 py-2" value="${editing?.capacidade || 1}"></div>
+          <div class="col-span-2"><label class="block text-sm mb-1">Nome</label><input id="tnome" class="w-full rounded-xl border px-3 py-2" value="${editing?.nome || ''}" required></div>
+          <div class="col-span-2 flex justify-end gap-2 mt-2">
+            <button type="button" class="px-3 py-2 rounded-lg border" onclick="closeModal()">Cancelar</button>
+            <button class="px-4 py-2 rounded-lg bg-brand-600 text-white">Salvar</button>
+          </div>
+        </form>
+      `);
+      byId('tipoForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const data = { id: byId('tid').value.trim(), nome: byId('tnome').value.trim(), capacidade: Number(byId('tcap').value) || 1 };
+        const idx = store.tipos.findIndex(x => x.id === data.id);
+        if(idx>=0) store.tipos[idx] = data; else store.tipos.push(data);
+        closeModal();
+        handleRoute();
+      });
+    }
+
+    function deleteTipo(id){
+      confirmDialog('Excluir tipo', 'Isso pode afetar quartos existentes.', () => {
+        const i = store.tipos.findIndex(t => t.id === id);
+        if(i>=0) store.tipos.splice(i,1);
+        handleRoute();
+      });
+    }
+
+    // INIT
+    (function init(){
+      const saved = sessionStorage.getItem('hotelsys_user');
+      if(saved){ store.user = JSON.parse(saved); bootApp(); }
+      // Default route
+      if(!location.hash) location.hash = 'dashboard';
+    })();
+  </script>
+</body>
+</html>
